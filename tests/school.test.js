@@ -2,7 +2,7 @@ const request = require('supertest');
 const app     = require('../app');
 const db      = require('./setup');
 
-beforeAll(async () => { await db.connect(); });
+beforeAll(async () => { await db.init(app); });
 afterEach(async () => { await db.clearDB(); });
 afterAll(async ()  => { await db.disconnect(); });
 
@@ -18,15 +18,14 @@ const getToken = async (role = 'superadmin', schoolId = null) => {
   return res.body.data?.token;
 };
 
-const schoolData = { name: 'Test School', address: '123 Main St', phone: '1234567890' };
+const schoolData = { name: 'Test School', address: '123 Main St' };
 
 describe('School Routes', () => {
   describe('POST /api/schools', () => {
     it('superadmin can create a school', async () => {
       const token = await getToken('superadmin');
       const res = await request(app).post('/api/schools')
-        .set('Authorization', `Bearer ${token}`)
-        .send(schoolData);
+        .set('Authorization', `Bearer ${token}`).send(schoolData);
       expect(res.status).toBe(201);
       expect(res.body.data.school.name).toBe(schoolData.name);
     });
@@ -39,8 +38,7 @@ describe('School Routes', () => {
     it('rejects missing required fields', async () => {
       const token = await getToken('superadmin');
       const res = await request(app).post('/api/schools')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ name: 'Only Name' });
+        .set('Authorization', `Bearer ${token}`).send({ name: 'Only Name' });
       expect(res.status).toBe(400);
     });
   });
@@ -62,8 +60,7 @@ describe('School Routes', () => {
         .set('Authorization', `Bearer ${token}`).send(schoolData);
       const id = created.body.data.school._id;
       const res = await request(app).put(`/api/schools/${id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send({ name: 'Updated School' });
+        .set('Authorization', `Bearer ${token}`).send({ name: 'Updated School' });
       expect(res.status).toBe(200);
       expect(res.body.data.school.name).toBe('Updated School');
     });
@@ -83,17 +80,13 @@ describe('School Routes', () => {
 
   describe('RBAC', () => {
     it('school_admin cannot create a school', async () => {
-      // Create a school first
       const adminToken = await getToken('superadmin');
       const schoolRes = await request(app).post('/api/schools')
         .set('Authorization', `Bearer ${adminToken}`).send(schoolData);
       const schoolId = schoolRes.body.data.school._id;
-
-      // Create school_admin
       const saToken = await getToken('school_admin', schoolId);
       const res = await request(app).post('/api/schools')
-        .set('Authorization', `Bearer ${saToken}`)
-        .send({ name: 'New School', address: '456 St' });
+        .set('Authorization', `Bearer ${saToken}`).send({ name: 'New School', address: '456 St' });
       expect(res.status).toBe(403);
     });
   });

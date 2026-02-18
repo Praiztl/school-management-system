@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 
 const connect = async () => {
+  // Skip if already connected
+  if (mongoose.connection.readyState === 1) return;
+  
   const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/school_management';
   try {
     await mongoose.connect(uri);

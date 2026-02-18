@@ -2,7 +2,7 @@ const request = require('supertest');
 const app     = require('../app');
 const db      = require('./setup');
 
-beforeAll(async () => { await db.connect(); });
+beforeAll(async () => { await db.init(app); });
 afterEach(async () => { await db.clearDB(); });
 afterAll(async ()  => { await db.disconnect(); });
 
@@ -47,8 +47,7 @@ describe('Auth Routes', () => {
 
     it('should login with valid credentials', async () => {
       const res = await request(app).post('/api/auth/login').send({
-        email: superadmin.email,
-        password: superadmin.password,
+        email: superadmin.email, password: superadmin.password,
       });
       expect(res.status).toBe(200);
       expect(res.body.data.token).toBeDefined();
@@ -56,16 +55,14 @@ describe('Auth Routes', () => {
 
     it('should reject invalid password', async () => {
       const res = await request(app).post('/api/auth/login').send({
-        email: superadmin.email,
-        password: 'wrong',
+        email: superadmin.email, password: 'wrong',
       });
       expect(res.status).toBe(401);
     });
 
     it('should reject non-existent user', async () => {
       const res = await request(app).post('/api/auth/login').send({
-        email: 'nobody@test.com',
-        password: 'password',
+        email: 'nobody@test.com', password: 'password',
       });
       expect(res.status).toBe(401);
     });
